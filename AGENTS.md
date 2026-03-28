@@ -73,6 +73,45 @@
     - Do not nest function calls for simple index calculations unless using explicit inline directives or an already-proven low-overhead pattern.
     - Keep hot-path indexing, stride calculation, and data access visibly direct when that avoids extra call overhead.
 
+11) **Multi-line commands must be scripts**:
+    - Any command that requires more than one line MUST be written as a script file and executed from that file.
+    - Create the script in `scripts_build/` or `scripts_tests/` as appropriate.
+    - Never inline multi-line commands in bash/powershell invocations.
+    - This prevents quoting hell, improves reproducibility, and keeps chat output clean.
+
+12) **Use cmd_runner for build and test scripts**:
+    - For any build script or test script execution, use `cmd_runner` (load the `cmd-runner` skill).
+    - Do not run build/test scripts directly via bash/powershell - this floods chat output.
+    - `cmd_runner` captures output to log files and keeps chat clean.
+    - If a build takes more than 2 minutes: stop, create a PR, compact the chat context, and wait for user instructions.
+    - The user will continue once the build completes on their side.
+    - **CRITICAL**: Model inference runs can corrupt stdout and crash the development session. ALWAYS use cmd_runner for:
+      - LLM model execution (llama-cli, server runs, any model inference)
+      - Long compilation jobs
+      - Any process that produces voluminous or binary output
+    - Never run model inference directly in shell - corrupted stdout breaks the workflow.
+
+13) **Code quality - no broken edits**:
+    - Every edit must compile without syntax errors.
+    - Common violations: missing parentheses in casts `(type *)ptr)` → `(type *)ptr)`, orphaned code fragments, mismatched braces.
+    - Before submitting edits, verify the change is syntactically complete.
+    - If compilation fails, fix immediately - do not proceed to testing.
+    - No "workarounds" or "temporary hacks" - code must be correct or not committed.
+
+14) **No error mimicking or excusing broken output**:
+    - If model output is wrong (e.g., "text adventure" instead of "hello world"), acknowledge the error and fix the root cause.
+    - Do not claim "it works" when output is clearly incorrect.
+    - Do not explain away errors with "might be temperature" or "could be model behavior" - test deterministically (--temp 0) and fix real issues.
+    - Validation means: correct output for the specific prompt, not just "no crash".
+    - If you cannot identify the root cause, state that explicitly rather than claiming success.
+
+13) **Path separators - never use single backslash**:
+    - NEVER use single backslash (`\`) for file paths in code, scripts, or commands.
+    - ALWAYS use forward slash (`/`) or double backslash (`\\`) for paths.
+    - Both forward slash and double backslash work correctly on Windows and Linux.
+    - Single backslash causes escape sequence issues in strings and breaks cross-platform compatibility.
+    - Example:Use `C:/path/to/file` or `C:\\path\\to\\file`, NOT `C:\path\to\file`.
+
 ## Response and traceability
 
 Rules to follow in every response:

@@ -22,27 +22,26 @@ Use this skill when a command may be:
 ## How to run it (recommended)
 
 - Repo/dev (any shell; deterministic file entrypoint):
-  - `uv run cmd_runner.py ...`
+  - `python cmd_runner.py ...` or `uv run cmd_runner.py ...`
 - Release bundle:
   - `cmd_runner.exe ...` (preferred; no `uv` required)
-- Via adm (integration; keeps a single progress-log cycle):
-  - `tools/adm.exe --cmd-runner <cmd_runner args...>`
-  - Example: `tools/adm.exe --cmd-runner start --terminal conhost -- <command ...>`
 
 ## Core workflow
 
-1) Start an interactive run (spawns a new window; interactive session is hosted there):
-- `uv run cmd_runner.py start --terminal conhost -- <command ...>`
+1) Start an interactive run (spawns a new window):
+- `python cmd_runner.py start -- <command ...>`
   - Prints `run_id` and `inbox=` path in the *current* terminal.
+  - Do NOT use `--terminal conhost` - use default terminal.
+  - Use PowerShell for Windows commands: `powershell -c "..."`
+  - For .cmd/.bat scripts: `python cmd_runner.py start -- powershell -c "& { cd D:/path; .\_run_asm.cmd }"`
 
 2) Check status first (from the current terminal):
-- `uv run cmd_runner.py list`
-- `uv run cmd_runner.py status <run_id>`
+- `python cmd_runner.py list`
+- `python cmd_runner.py status <run_id>`
   - Use `status` first to confirm the program is still alive and did not crash before reading output.
 
 3) Tail output (from the current terminal):
-- Repo checkout: `uv run cmd_runner.py tail <run_id>` (repo root)
-- Release bundle: `cmd_runner.exe tail <run_id>` (bundle root)
+- `python cmd_runner.py tail <run_id>` (repo root)
   - Start with non-follow `tail` for a compact snapshot.
   - Add `--follow` only when live streaming is needed.
   - Prefer repeated `status`/non-follow `tail` checks over ad hoc shell sleeps; keep delay/wait handling inside the cmd_runner workflow.
@@ -50,15 +49,13 @@ Use this skill when a command may be:
 4) Inject input programmatically (bridge):
 - Append JSONL to: `logs/cmd_runner/<run_id>/inbox.jsonl`
 - Built-in (preferred):
-  - `uv run cmd_runner.py send <run_id> --keys "TEXT:/exit,ENTER"`
-- Helper (legacy but still available):
-  - `uv run scripts/cmd_runner_inbox_send.py --run-id <run_id> --keys "TEXT:/exit,ENTER"`
+  - `python cmd_runner.py send <run_id> --keys "TEXT:/exit,ENTER"`
 
 5) Stop (serverless terminate):
-- `uv run cmd_runner.py stop <run_id> --reason "done"`
+- `python cmd_runner.py stop <run_id> --reason "done"`
   - Writes `logs/cmd_runner/<run_id>/stop_request.json`; the hosting cmd_runner watches for it and terminates the Job Object.
 
 Notes:
 - `add_crlf` defaults to `false` (no implicit Enter). Use `ENTER` in `keys` or `--crlf` in the helper.
-- Supported terminal hosts are `conhost` and `wt`.
-- For stable key input/editing, prefer `--terminal conhost`.
+- Use `powershell -c "..."` for Windows commands, NOT `cmd /c`.
+- For `.cmd` scripts, use PowerShell: `powershell -c "& { cd D:/path; .\_run_asm.cmd }"`
